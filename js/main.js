@@ -112,6 +112,9 @@ function startLevel(n, fresh = false) {
   showPlay()
   board.set(run.board)
   showBar()
+  // A level saved already solved (it happened when a sound error stopped the game after the
+  // last pour, 2026-11-13) is finished now.
+  if (isSolved(run.board)) return levelDone()
   if (isStuck(run.board)) showStuck()
 }
 

@@ -6,6 +6,18 @@ import { burst, filter, gain, mtof, rand } from '/shared/v1/sound/noise.js'
 export class PourSounds {
   constructor(sound) {
     this.sound = sound
+    // A sound must never stop the game (2026-11-13: an instrument missing from the live toolbox
+    // threw after the last pour, so level 1 never finished). Every sound is wrapped.
+    for (const name of ['pour', 'pick', 'drop', 'nope', 'complete', 'win', 'firework', 'stuck']) {
+      const play = this[name].bind(this)
+      this[name] = (...args) => {
+        try {
+          play(...args)
+        } catch (e) {
+          console.warn('Pour sound', name, e)
+        }
+      }
+    }
   }
 
   get ready() {
@@ -90,7 +102,7 @@ export class PourSounds {
     const t = this.now(0.15)
     const root = 72 + ([0, 2, 4, 7, 9][count % 5] ?? 0)
     ;[0, 4, 7, 12].forEach((step, k) =>
-      INSTRUMENTS.celesta.play(this.sound.ctx, this.out(1.1), { freq: mtof(root + step), when: t + k * 0.07, vel: 0.8 }),
+      INSTRUMENTS.musicBox.play(this.sound.ctx, this.out(1.1), { freq: mtof(root + step), when: t + k * 0.07, vel: 0.8 }),
     )
   }
 

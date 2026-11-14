@@ -6,7 +6,8 @@
     "serve": "node tests/serve.mjs",
     "levels": "node tools/make-levels.mjs",
     "check": "node --test tests/pour.test.mjs",
-    "test": "node --test tests/pour.test.mjs && playwright test"
+    "test": "node --test tests/pour.test.mjs && playwright test",
+    "test:published": "bash tools/test-published.sh"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1"

@@ -119,3 +119,17 @@ test('after level 600 the climb keeps rising, ever more slowly', () => {
     last = c
   }
 })
+
+// Pour's sounds may only use instruments the published toolbox has: the toolbox on this computer
+// can hold newer, unpublished ones (that broke level 1 on the phones on 2026-11-13).
+test('every instrument the sounds use is in the published toolbox', async () => {
+  const { execFileSync } = await import('node:child_process')
+  let published
+  try {
+    published = execFileSync('git', ['-C', new URL('../../hub', import.meta.url).pathname, 'show', 'origin/main:shared/v1/sound/instruments.js'], { encoding: 'utf8' })
+  } catch {
+    return // no hub repo here (the publish check on GitHub): nothing to compare
+  }
+  const used = new Set([...readFileSync(new URL('../js/pour/sounds.js', import.meta.url), 'utf8').matchAll(/INSTRUMENTS\.(\w+)/g)].map((m) => m[1]))
+  for (const name of used) assert.match(published, new RegExp(`^  ${name}: \\{`, 'm'), `instrument ${name} is not published yet`)
+})
