@@ -16,3 +16,6 @@ LATER.md
 
 # Look mockups (local only)
 mockups/
+
+# Untangle level maker, run in progress
+data/untangle-progress.jsonl
