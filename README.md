@@ -3,13 +3,14 @@
 Sorting puzzles in GameHub. The first game is **Pour**: pour coloured liquid between tubes until
 every tube holds just one colour.
 
-- 600 levels in one line, getting harder as they go (2 colours at level 1, 12 at level 600).
+- 3000 levels in one line, getting harder as they go: 2 colours at level 1, 12 from level 420,
+  then trickier mixes, the climb slowing as the levels go up.
   Every level is checked by our own solver, which also finds its fewest possible moves.
 - 5 undos a level, no hints; Restart is always free. A clock counts up while you play.
 - When a level is done: your moves next to the fewest possible, your time and undos used.
 - No ads, no lives, no purchases, no countdowns.
 
-Play: https://standan3126.github.io/sort-it/ (once published)
+Play: https://standan3126.github.io/sort-it/ (best inside GameHub: https://standan3126.github.io/)
 
 | File | What it holds |
 |---|---|
@@ -24,8 +25,8 @@ Play: https://standan3126.github.io/sort-it/ (once published)
 ```
 npm install
 npm run serve     # http://localhost:4240/sort-it/  (phone preview: /tools/phone.html)
-npm test          # rules and all 600 levels, then the game at three phone sizes
-npm run levels    # remake the levels (same every time)
+npm test          # rules and all 3000 levels, then the game at three phone sizes
+npm run levels    # remake the levels (same every time; uses every core, a few minutes)
 ```
 
 Uses the GameHub toolbox (`/shared/v1/`) from

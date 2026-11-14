@@ -2,7 +2,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { colorsFor, LEVEL_COUNT } from '../js/pour/levels.js'
+import { createHash } from 'node:crypto'
+import { climb, colorsFor, LEVEL_COUNT } from '../js/pour/levels.js'
 import { isComplete, isSolved, isStuck, legalMoves, parseLevel, pour, pourAmount, topRun } from '../js/pour/rules.js'
 import { minMoves, solve } from '../js/pour/solver.js'
 
@@ -30,7 +31,7 @@ test('solved, finished and stuck', () => {
   assert.equal(legalMoves(['abab', 'bab']).length, 1)
 })
 
-test('there are 600 levels, each with every colour exactly four times', () => {
+test('there are 3000 levels, each with every colour exactly four times', () => {
   assert.equal(data.levels.length, LEVEL_COUNT)
   data.levels.forEach((text, k) => {
     const board = parseLevel(text)
@@ -98,4 +99,23 @@ test('every level has a fewest-moves number no bigger than a found solution', ()
     const found = solve(parseLevel(text)).moves.length
     assert.ok(data.min[k] > 0 && data.min[k] <= found, `level ${k + 1}: fewest ${data.min[k]}, found ${found}`)
   })
+})
+
+test('levels 1-600 never change (the ones played before 3000 were made)', () => {
+  const hash = createHash('sha256').update(data.levels.slice(0, 600).join('\n')).digest('hex')
+  assert.equal(hash, '6012870031663d4ae9b1bb59eac7602b581d1e799b7b9c44340e6bac87f8371f')
+})
+
+test('after level 600 the climb keeps rising, ever more slowly', () => {
+  assert.equal(climb(600), 0)
+  assert.equal(climb(3000), 1)
+  let last = 0
+  let lastStep = Infinity
+  for (let n = 700; n <= 3000; n += 100) {
+    const c = climb(n)
+    assert.ok(c > last)
+    assert.ok(c - last <= lastStep + 1e-9)
+    lastStep = c - last
+    last = c
+  }
 })

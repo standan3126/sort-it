@@ -3,7 +3,7 @@
 //   pour/sounds.js  every sound                 fireworks.js   the end-of-level fireworks
 //   data/pour-levels.json  the 600 levels (made by tools/make-levels.mjs, checked by the solver)
 import { Book } from '/shared/v1/book.js'
-import { gameFrame, setupPage, tapToStart } from '/shared/v1/kit.js'
+import { gameFrame, setupPage, tapToStart, warmOffline } from '/shared/v1/kit.js'
 import { gameStore } from '/shared/v1/save.js'
 import { SettingsPanel, toggle } from '/shared/v1/settings.js'
 import { Sound } from '/shared/v1/sound/index.js'
@@ -402,6 +402,10 @@ tapToStart({
     panel.applySound()
   },
 })
+
+// Save the whole game for offline play in the background (GameHub's offline helper; the list is
+// made when the site is published, so it's missing when played from this computer).
+warmOffline('offline-files.json')
 
 // For tests and the phone preview.
 window.sortIt = { save: () => save, run: () => run, tap, undo, restart, startLevel, levels: () => LEVELS, fewest: () => FEWEST, panel, sound, store, board }

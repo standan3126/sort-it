@@ -1,11 +1,16 @@
 // Pour: how the levels are made (tools/make-levels.mjs writes them to data/pour-levels.json).
 // Every level is a random mix, checked by the solver; it gets harder as it goes:
-//   more colours (2 at level 1, 12 from level 420), and within the levels with the same number of
-//   colours, the trickier of the mixes the solver tried.
+//   levels 1-600: more colours (2 at level 1, 12 from level 420), and within the levels with the
+//     same number of colours, the trickier of the mixes the solver tried;
+//   levels 601-3000 (added 2026-11-13, user: "keep increasing the difficulty but slower"): 12
+//     colours, and the pick moves slowly toward the trickiest of more and more mixes, fast at
+//     first and slower and slower, so level 1000 and level 3000 aren't far apart.
+// The first 600 must never change (made exactly as before; FIRST_COUNT keeps their old maths).
 import { HEIGHT, isComplete } from './rules.js'
 import { difficulty } from './solver.js'
 
-export const LEVEL_COUNT = 600
+export const LEVEL_COUNT = 3000
+const FIRST_COUNT = 600 // the first batch; its levels are made with the original rules
 export const EMPTY_TUBES = 2
 export const LETTERS = 'abcdefghijkl' // one letter per colour, 12 colours
 
@@ -32,9 +37,9 @@ export function colorsFor(n) {
 
 // Where level n sits among the levels with its number of colours: 0 (first) to 1 (last).
 function placeInStep(n) {
-  const i = STEPS.findLastIndex(([from]) => n <= LEVEL_COUNT && n >= from)
+  const i = STEPS.findLastIndex(([from]) => n <= FIRST_COUNT && n >= from)
   const from = STEPS[i][0]
-  const to = (STEPS[i + 1]?.[0] ?? LEVEL_COUNT + 1) - 1
+  const to = (STEPS[i + 1]?.[0] ?? FIRST_COUNT + 1) - 1
   return to === from ? 0.5 : (n - from) / (to - from)
 }
 
@@ -70,9 +75,26 @@ function fair(board, height = HEIGHT) {
   return board.every((t) => !t || (!isComplete(t, height) && !/(.)\1\1/.test(t)))
 }
 
-// Level n: the mixes tried, sorted by how tricky they are; early levels in a step take an easy
-// one, later ones a trickier one.
-export function makeLevel(n, { tries = 14, seed = 2026 } = {}) {
+// After level 600: how far along the long climb (0 at 601, 1 at 3000), bending so it rises
+// quickly at first and then ever more slowly.
+export function climb(n) {
+  const t = Math.min(1, Math.max(0, (n - FIRST_COUNT) / (LEVEL_COUNT - FIRST_COUNT)))
+  return Math.log1p(12 * t) / Math.log1p(12)
+}
+
+export function makeLevel(n, opts = {}) {
+  if (n <= FIRST_COUNT) return makeFirst(n, opts)
+  // More mixes tried (14 → 30) and a pick nearer the trickiest (85% → 97%) as the climb goes on.
+  const c = climb(n)
+  return pickLevel(n, { tries: Math.round(14 + 16 * c), place: 0.85 + 0.12 * c, seed: opts.seed })
+}
+
+function makeFirst(n, { tries = 14, seed = 2026 } = {}) {
+  return pickLevel(n, { tries, place: placeInStep(n) * 0.85, seed })
+}
+
+// Level n: the mixes tried, sorted by how tricky they are, and the one at `place` (0 = easiest).
+function pickLevel(n, { tries, place, seed = 2026 }) {
   const random = rng(seed * 100003 + n * 7919)
   const colors = colorsFor(n)
   const found = []
@@ -84,6 +106,6 @@ export function makeLevel(n, { tries = 14, seed = 2026 } = {}) {
     if (Number.isFinite(d)) found.push({ board, d })
   }
   found.sort((x, y) => x.d - y.d)
-  const pick = Math.round(placeInStep(n) * 0.85 * (found.length - 1)) // the very trickiest are left out
+  const pick = Math.round(place * (found.length - 1)) // the very trickiest are left out
   return found[pick]
 }
