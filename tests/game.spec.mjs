@@ -132,7 +132,7 @@ test('setting the level by hand takes over a level in progress', async ({ page }
   await page.locator('.hub-secret button').click()
   await page.locator('dialog input[type=number]').first().fill('300')
   await page.getByRole('button', { name: 'Set', exact: true }).click()
-  await expect(page.locator('.hub-message')).toHaveText('Set: Pour level 300.')
+  await expect(page.locator('.hub-message')).toHaveText('Set: Pour level 300, Untangle level 1.')
   await page.getByRole('button', { name: 'Close settings' }).click()
   await expect(page.locator('#play')).toHaveText('Play level 300')
   await page.locator('#play').click()

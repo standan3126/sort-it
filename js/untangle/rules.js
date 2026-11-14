@@ -249,3 +249,17 @@ export function untangled(ropes, holes, slots = [...Array(ropes).keys()]) {
 
 /** Play a list of moves [[rope, hole], ...] from a state. */
 export const play = (state, moves) => moves.reduce((s, [r, h]) => move(s, r, h), state)
+
+/**
+ * The Cut: rope r is taken out of the puzzle. The others keep their crossings with each other.
+ * Ropes are numbered 0..n-1 in the rules, so the rest are renumbered: returns { state, ids },
+ * ids[newNumber] = the rope's number before the cut.
+ */
+export function cut(state, r) {
+  const n = state.top.length
+  const ids = [...Array(n).keys()].filter((x) => x !== r)
+  const hole = {}
+  ids.forEach((old, i) => (hole[i] = state.hole[old]))
+  const top = state.top.filter((x) => x !== r).map((x) => ids.indexOf(x))
+  return { state: { top, word: without(state.top, state.word, r), hole, holes: state.holes }, ids }
+}

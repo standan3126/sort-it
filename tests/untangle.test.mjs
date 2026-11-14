@@ -1,7 +1,7 @@
 // Untangle rules: the exact "is it untangled?" check, freeing ropes, moves.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { normalForm, isTrivial, tangleKey, move, solved, isFree, untangled, play, rng, linkedPairs } from '../js/untangle/rules.js'
+import { cut, normalForm, isTrivial, tangleKey, move, solved, isFree, untangled, play, rng, linkedPairs } from '../js/untangle/rules.js'
 
 // A slow but obviously right check (the braid group acting on a free group): a tangle is
 // undone exactly when it sends every letter back to itself. Fine for short lists.
@@ -101,6 +101,14 @@ test('the first 60 levels: the solver agrees on the fewest moves', { skip: !data
   }
 })
 
+test('no two levels are the same', { skip: !data && 'levels not made yet' }, () => {
+  const first = new Map()
+  for (const [i, l] of data.levels.entries()) {
+    assert.ok(!first.has(l), `level ${i + 1} is the same as level ${first.get(l)}`)
+    first.set(l, i + 1)
+  }
+})
+
 test('levels get harder: ropes never drop, fewest moves climb', { skip: !data && 'levels not made yet' }, () => {
   let ropes = 0
   for (let n = 1; n <= LEVEL_COUNT; n++) {
@@ -109,4 +117,34 @@ test('levels get harder: ropes never drop, fewest moves climb', { skip: !data &&
   }
   const avg = (a, b) => data.min.slice(a, b).reduce((x, y) => x + y, 0) / (b - a)
   assert.ok(avg(0, 20) < avg(200, 300) && avg(200, 300) < avg(2800, 3000))
+})
+
+test('a Cut takes one rope out and keeps the others as they were', () => {
+  // Rope 0 crosses over 1 and 2; cutting it leaves 1 and 2 untangled.
+  let s = untangled(3, 4)
+  s = move(s, 0, 3)
+  assert.ok(!solved(s))
+  const c = cut(s, 0)
+  assert.deepEqual(c.ids, [1, 2])
+  assert.ok(solved(c.state))
+  assert.equal(c.state.top.length, 2)
+  // Random tangles: cutting a rope gives the same tangle as never having it.
+  const r = rng(7)
+  for (let t = 0; t < 200; t++) {
+    const n = 3 + (t % 4)
+    let full = untangled(n, n + 2)
+    const gone = Math.floor(r() * n)
+    for (let m = 0; m < 6; m++) {
+      const rope = Math.floor(r() * n)
+      const free = Object.values(full.hole)
+      const holes = [...Array(n + 2).keys()].filter((h) => !free.includes(h))
+      full = move(full, rope, holes[Math.floor(r() * holes.length)])
+    }
+    const c = cut(full, gone)
+    // Same pairs wound the same way, renumbered.
+    const want = linkedPairs(full).filter(([a, b]) => a !== gone && b !== gone).map(([a, b, k]) => [c.ids.indexOf(a), c.ids.indexOf(b), k])
+    assert.deepEqual(linkedPairs(c.state), want)
+    // Moves still work on the cut tangle.
+    move(c.state, 0, [...Array(n + 2).keys()].find((h) => !Object.values(c.state.hole).includes(h)))
+  }
 })

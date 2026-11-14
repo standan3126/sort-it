@@ -26,9 +26,9 @@ jobs:
         with:
           node-version: 22
       - name: Check every script parses
-        run: for f in js/*.js js/pour/*.js; do node --check "$f"; done
+        run: for f in js/*.js js/pour/*.js js/untangle/*.js; do node --check "$f"; done
       - name: Check the rules and every level
-        run: node --test tests/pour.test.mjs
+        run: node --test tests/pour.test.mjs tests/untangle.test.mjs
       - name: Gather the site
         run: |
           mkdir _site

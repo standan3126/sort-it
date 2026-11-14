@@ -8,23 +8,32 @@
     <link rel="stylesheet" href="/shared/v1/kit.css" />
     <link rel="stylesheet" href="/shared/v1/settings.css" />
     <link rel="stylesheet" href="/shared/v1/book.css" />
+    <link rel="stylesheet" href="/shared/v1/scenery.css" />
     <link rel="stylesheet" href="css/game.css" />
   </head>
   <body>
-    <!-- Launch page: one card per sorting game (Pour first; more later). -->
+    <!-- Launch page: one card per sorting game. Tap a card to choose it; Play and Levels follow
+         the chosen one. -->
     <main id="home" class="hub-launch">
       <header class="hub-launch-head">
         <h1>Sort It</h1>
-        <p>Sorting puzzles. Put every colour in its place.</p>
+        <p>Sorting puzzles. Put everything in its place.</p>
       </header>
-      <div class="games">
-        <section class="game-card" id="card-pour">
-          <div class="game-head">
+      <div class="games" role="radiogroup" aria-label="Which game">
+        <button type="button" class="game-card" id="card-pour" role="radio" aria-checked="true">
+          <span class="game-head">
             <span class="game-name">Pour</span>
             <span class="game-level" id="pour-level">Level 1</span>
-          </div>
-          <p class="game-about">Pour the colours between tubes until every tube holds just one colour.</p>
-        </section>
+          </span>
+          <span class="game-about">Pour the colours between tubes until every tube holds just one colour.</span>
+        </button>
+        <button type="button" class="game-card" id="card-untangle" role="radio" aria-checked="false">
+          <span class="game-head">
+            <span class="game-name">Untangle</span>
+            <span class="game-level" id="untangle-level">Level 1</span>
+          </span>
+          <span class="game-about">Move the pegs at the bottom until every rope hangs free.</span>
+        </button>
       </div>
       <div class="hub-launch-actions">
         <button type="button" class="hub-play" id="play">Play</button>
@@ -34,7 +43,7 @@
 
     <!-- The levels: six a page (the toolbox's book). -->
     <section id="book-screen" class="screen" hidden>
-      <p class="screen-title">Pour levels</p>
+      <p class="screen-title" id="book-title">Pour levels</p>
       <div id="book" class="book-area"></div>
     </section>
 
@@ -48,6 +57,22 @@
       <footer class="bar">
         <button type="button" class="tool" id="undo"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span id="undo-label">Undo · 5</span></button>
         <button type="button" class="tool" id="restart"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v5h-5"/><path d="M20 10a8 8 0 1 0 1 6"/></svg><span id="restart-label">Restart</span></button>
+      </footer>
+    </section>
+
+    <!-- Playing Untangle: the place painted behind, the ropes in 3D over it. -->
+    <section id="untangle-screen" class="screen untangle" hidden>
+      <div id="untangle-scenery" class="untangle-scenery"></div>
+      <div id="untangle-stage" class="untangle-stage"></div>
+      <div class="level-info chip-info">
+        <p class="level-name" id="untangle-name">Level 1</p>
+        <p class="level-clock"><span id="untangle-moves">0 moves</span> · <span id="untangle-clock">0:00</span></p>
+      </div>
+      <p class="cut-note" id="cut-note" hidden>Tap a peg to cut its rope</p>
+      <footer class="bar untangle-bar">
+        <button type="button" class="tool" id="u-undo"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span id="u-undo-label">Undo · 3</span></button>
+        <button type="button" class="tool" id="u-restart"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v5h-5"/><path d="M20 10a8 8 0 1 0 1 6"/></svg><span id="u-restart-label">Restart</span></button>
+        <button type="button" class="tool" id="u-cut" hidden><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20"/><path d="M8.1 15.9L20 4"/></svg><span id="u-cut-label">Cut · 1</span></button>
       </footer>
     </section>
 
@@ -102,6 +127,26 @@
           <dd>When you finish, you see your moves next to the fewest moves possible. Every pour counts, even one you undo. Can you match it?</dd>
           <dt>The clock</dt>
           <dd>Counts only while the tubes are in front of you.</dd>
+        </dl>
+        <p class="soft rules-close">Tap anywhere to close</p>
+      </div>
+    </div>
+
+    <div id="untangle-rules" class="sheet" hidden>
+      <div class="card rules-card">
+        <h2>How to play Untangle</h2>
+        <p>Drag a peg at the bottom to an empty hole. The peg floats above your finger; when a hole lights up yellow, let go.</p>
+        <dl>
+          <dt>Moving a rope</dt>
+          <dd>The rope you move always passes <b>over</b> the ropes it crosses. The order you move them in matters.</dd>
+          <dt>Done</dt>
+          <dd>Every rope hangs free, with nothing wound around it.</dd>
+          <dt>Undo</dt>
+          <dd><b>3</b> each level. An undo takes the move back off your count.</dd>
+          <dt>Cut</dt>
+          <dd>You earn a Cut at level 50, and one more every 50 levels; unused ones save up. A Cut takes a rope out and counts as a move, and that level can't be Perfect. Restart gives the Cut back.</dd>
+          <dt>Your score</dt>
+          <dd>When you finish, you see your moves next to the fewest moves possible. Can you match it?</dd>
         </dl>
         <p class="soft rules-close">Tap anywhere to close</p>
       </div>

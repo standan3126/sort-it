@@ -23,8 +23,21 @@ const SLACK = 1.025 // rope length compared with the straight line between its p
 const REACH = GAP + 10 // how near two pieces must be to be checked this frame (with room to move)
 export const LIFTED = 56 // how far a picked-up peg rises toward the player
 
+// Elastic ropes (trial, user 2026-11-14: "too loose ... elastic ... pull taut"). Off by default:
+// the classic ropes above stay exactly as they were. Elastic ropes are shorter at rest than any
+// gap between pegs, so they are always a little stretched: straight when nothing is in the way,
+// pulled tight around the ropes they cross, and they tug on those ropes.
+export const ELASTIC = {
+  natural: 0.86, // rest length compared with the top-to-hole height
+  stretch: 0.32, // how hard the stretch pulls back each pass (lower = stretchier)
+  bend: 0.14, // stiffness against kinks
+  damp: 0.9, // a touch of spring before it settles
+  droop: 0,
+}
+
 export class RopeWorld {
-  constructor() {
+  constructor({ elastic = false } = {}) {
+    this.elastic = elastic ? ELASTIC : null
     this.ropes = []
     this.cand = new Int32Array(4096)
     this.nCand = 0
@@ -40,6 +53,7 @@ export class RopeWorld {
       pos[i * 3 + 2] = RADIUS
     }
     const rope = { id, pos, prev: pos.slice(), top: [x0, -y0, RADIUS], end: [x1, -y1, RADIUS], rest: 0, awake: true }
+    if (this.elastic) rope.natural = (Math.abs(y1 - y0) * this.elastic.natural) / (POINTS - 1)
     this.ropes.push(rope)
     return rope
   }
@@ -67,6 +81,9 @@ export class RopeWorld {
 
   substep() {
     const ropes = this.ropes
+    const el = this.elastic
+    const damp = el ? el.damp : DAMP
+    const droop = el ? el.droop : DROOP
     let most = 0
     for (const r of ropes) {
       const { pos, prev } = r
@@ -87,16 +104,16 @@ export class RopeWorld {
       const dx = pos[e] - r.top[0]
       const dy = pos[e + 1] - r.top[1]
       const dz = pos[e + 2] - r.top[2]
-      r.rest = (Math.hypot(dx, dy, dz) * SLACK) / (POINTS - 1)
+      r.rest = el ? r.natural : (Math.hypot(dx, dy, dz) * SLACK) / (POINTS - 1)
       for (let i = 1; i < POINTS - 1; i++) {
         const j = i * 3
         for (let k = 0; k < 3; k++) {
-          const v = (pos[j + k] - prev[j + k]) * DAMP
+          const v = (pos[j + k] - prev[j + k]) * damp
           prev[j + k] = pos[j + k]
           pos[j + k] += v
           most = Math.max(most, Math.abs(v))
         }
-        pos[j + 1] -= DROOP
+        pos[j + 1] -= droop
         pos[j + 2] -= LEAN
       }
       pos[0] = r.top[0]
@@ -134,8 +151,9 @@ export class RopeWorld {
       pos[ib + 1] -= dy * c * wb
       pos[ib + 2] -= dz * c * wb
     }
-    for (let i = 0; i + 1 < POINTS; i++) pull(i, i + 1, rest, 0.9)
-    for (let i = 0; i + 2 < POINTS; i++) pull(i, i + 2, rest * 2, 0.08)
+    const el = this.elastic
+    for (let i = 0; i + 1 < POINTS; i++) pull(i, i + 1, rest, el ? el.stretch : 0.9)
+    for (let i = 0; i + 2 < POINTS; i++) pull(i, i + 2, rest * 2, el ? el.bend : 0.08)
   }
 
   // Pieces of different ropes near each other, found once a frame: every piece's box (with room
