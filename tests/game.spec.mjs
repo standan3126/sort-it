@@ -105,3 +105,27 @@ test('settings: colour marks and night filter', async ({ page }) => {
   const saved = await page.evaluate(() => window.sortIt.store.get('my-settings'))
   expect(saved.marks).toBe(true)
 })
+
+// The hidden tools: 5 taps on the Settings heading + the family code (kept private, outside the
+// repo; the test is skipped without it). A level set by hand is the one Play opens, even with
+// another level in progress.
+test('setting the level by hand takes over a level in progress', async ({ page }) => {
+  const { existsSync, readFileSync } = await import('node:fs')
+  const file = new URL('../../hub/private/family-code.txt', import.meta.url)
+  test.skip(!existsSync(file), 'no family code on this computer')
+  const code = readFileSync(file, 'utf8').trim()
+  await open(page)
+  await page.locator('#play').click()
+  await page.locator('#rules').click()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  for (let i = 0; i < 5; i++) await page.locator('dialog h2').first().click()
+  await page.locator('.hub-secret input').fill(code)
+  await page.locator('.hub-secret button').click()
+  await page.locator('dialog input[type=number]').first().fill('300')
+  await page.getByRole('button', { name: 'Set', exact: true }).click()
+  await expect(page.locator('.hub-message')).toHaveText('Set: Pour level 300.')
+  await page.getByRole('button', { name: 'Close settings' }).click()
+  await expect(page.locator('#play')).toHaveText('Play level 300')
+  await page.locator('#play').click()
+  await expect(page.locator('#level-name')).toHaveText('Level 300')
+})

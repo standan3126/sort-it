@@ -63,9 +63,11 @@ const panel = new SettingsPanel({
     fields: [{ id: 'level', label: 'Pour level', min: 1, get: () => save.reached }],
     onSet: ({ level }) => {
       save.reached = Math.max(1, Math.min(level, levelCount() || 600))
-      if (save.run && save.run.n > save.reached) save.run = null
+      // The level set by hand is the one Play opens next: a level in progress is let go of
+      // (before 2026-11-13 it was kept, so Play still said "Continue level 1").
+      if (save.run && save.run.n !== save.reached) save.run = null
       saveGame()
-      if (!$('home').hidden) showHome()
+      if ($('play-screen').hidden || run?.n !== save.reached) showHome()
       return `Set: Pour level ${save.reached}.`
     },
   },
