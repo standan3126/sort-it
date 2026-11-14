@@ -44,7 +44,9 @@ const panel = new SettingsPanel({
   gameId: GAME_ID,
   store,
   sound,
-  defaults: { marks: false },
+  // A Challenge game (contract rule 9): livelier music by default than the Cozy games' Quiet
+  // Words music. GameHub's or the player's own Music choice still wins.
+  defaults: { marks: false, music: 'island' },
   sections: [
     {
       title: 'Pour',
@@ -252,6 +254,7 @@ function levelDone() {
     const last = n >= levelCount()
     $('done-next').textContent = last ? 'Home' : `Next level`
     $('done-next').dataset.next = last ? '' : String(n + 1)
+    $('done-replay').dataset.level = String(n)
     $('done').hidden = false
     fireworks.show(6)
   }, 700)
@@ -263,6 +266,12 @@ $('done-next').onclick = () => {
   const next = Number($('done-next').dataset.next)
   if (next) startLevel(next)
   else showHome()
+}
+// Replay the level just finished, from the start (a fresh clock and 5 undos), to beat the score.
+$('done-replay').onclick = () => {
+  fireworks.stop()
+  $('done').hidden = true
+  startLevel(Number($('done-replay').dataset.level), true)
 }
 $('done-home').onclick = () => {
   fireworks.stop()

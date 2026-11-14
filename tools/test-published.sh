@@ -10,4 +10,4 @@ trap 'rm -rf "$tmp"' EXIT
 git -C "$hub" fetch -q origin main
 git -C "$hub" archive origin/main shared tools/phone.html icons | tar -x -C "$tmp"
 cd "$here"
-HUB_DIR="$tmp" npx playwright test
+HUB_DIR="$tmp" PORT=4241 npx playwright test

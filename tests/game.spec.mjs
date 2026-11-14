@@ -46,6 +46,13 @@ test('play level 1 by tapping, see fireworks and go on to level 2', async ({ pag
   await expect(page.locator('#done-score')).toHaveText(
     moves === fewest ? 'Perfect! The fewest moves possible.' : `${moves - fewest} more than the fewest. Can you match it?`,
   )
+  // Replay starts level 1 again, fresh; finishing it again leads on to level 2.
+  await expect(page.locator('#done-replay')).toBeVisible()
+  await expect(page.locator('#done-home')).toBeVisible()
+  await page.locator('#done-replay').click()
+  await expect(page.locator('#level-name')).toHaveText('Level 1')
+  expect(await page.evaluate(() => window.sortIt.run().moves)).toBe(0)
+  await solveLevel(page, 1)
   await page.locator('#done-next').click()
   await expect(page.locator('#level-name')).toHaveText('Level 2')
   const save = await page.evaluate(() => window.sortIt.save())
@@ -104,6 +111,8 @@ test('settings: colour marks and night filter', async ({ page }) => {
   await expect(page.locator('#night-filter')).toBeVisible()
   const saved = await page.evaluate(() => window.sortIt.store.get('my-settings'))
   expect(saved.marks).toBe(true)
+  // A Challenge game: Island Breeze by default, not the Cozy games' Quiet Words music.
+  expect(await page.evaluate(() => window.sortIt.panel.settings.music)).toBe('island')
 })
 
 // The hidden tools: 5 taps on the Settings heading + the family code (kept private, outside the
