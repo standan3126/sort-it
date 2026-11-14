@@ -14,64 +14,90 @@
 // same form. Untangled = k is 0 and there are no pieces.
 
 // ---------- simple pieces, stored as permutations ----------
-// A piece is an array w; adding a crossing at place i on the right swaps positions i, i+1;
-// on the left swaps the values i, i+1.
-const swapPos = (w, i) => {
-  const c = w.slice()
-  ;[c[i], c[i + 1]] = [c[i + 1], c[i]]
-  return c
+// A piece is a permutation w (an array); adding a crossing at place i on the right swaps
+// positions i, i+1; on the left swaps the values i, i+1. With at most 8 ropes there are at most
+// 8! = 40320 pieces, so each piece gets a number and every operation is looked up in a table
+// made once (this is what makes the solver fast enough to make 3000 levels).
+const tableCache = new Map()
+function tables(n) {
+  if (tableCache.has(n)) return tableCache.get(n)
+  const perms = []
+  const build = (w, rest) => {
+    if (!rest.length) return perms.push(w)
+    for (let i = 0; i < rest.length; i++) build([...w, rest[i]], [...rest.slice(0, i), ...rest.slice(i + 1)])
+  }
+  build([], [...Array(n).keys()])
+  const code = (w) => w.reduce((c, v) => c * n + v, 0)
+  const index = new Map(perms.map((w, i) => [code(w), i]))
+  const m = Math.max(1, n - 1)
+  const P = perms.length
+  const T = {
+    pos: new Int32Array(P * m), // piece × crossing on the right
+    val: new Int32Array(P * m), // crossing on the left × piece
+    ends: new Int32Array(P), // places a piece could end with (bit mask)
+    starts: new Int32Array(P), // places a piece could start with
+    flip: new Int32Array(P), // Δ x Δ⁻¹: the same piece in a mirror
+    id: index.get(code([...Array(n).keys()])),
+    delta: index.get(code([...Array(n).keys()].reverse())),
+    m,
+  }
+  perms.forEach((w, p) => {
+    for (let i = 0; i + 1 < n; i++) {
+      const sp = w.slice()
+      ;[sp[i], sp[i + 1]] = [sp[i + 1], sp[i]]
+      T.pos[p * m + i] = index.get(code(sp))
+      T.val[p * m + i] = index.get(code(w.map((v) => (v === i ? i + 1 : v === i + 1 ? i : v))))
+      if (w[i] > w[i + 1]) T.ends[p] |= 1 << i
+      if (w.indexOf(i) > w.indexOf(i + 1)) T.starts[p] |= 1 << i
+    }
+    T.flip[p] = index.get(code(w.map((_, j) => n - 1 - w[n - 1 - j])))
+  })
+  tableCache.set(n, T)
+  return T
 }
-const swapVal = (w, i) => w.map((v) => (v === i ? i + 1 : v === i + 1 ? i : v))
-const ident = (n) => [...Array(n).keys()]
-const delta = (n) => ident(n).reverse()
-const isIdent = (w) => w.every((v, i) => v === i)
-const isDelta = (w) => w.every((v, i) => v === w.length - 1 - i)
-// Δ x Δ⁻¹: the same piece seen in a mirror.
-const flip = (w) => w.map((_, j) => w.length - 1 - w[w.length - 1 - j])
-const ends = (w, i) => w[i] > w[i + 1] // could end with a crossing at place i
-const starts = (w, i) => w.indexOf(i) > w.indexOf(i + 1) // could start with one
+
+/** Add one crossing to a standard form (kept standard): returns a new form. */
+export function addToForm(n, form, [i, s]) {
+  const T = tables(n)
+  let k = form.k
+  let parts
+  if (s > 0) parts = [...form.parts, T.pos[T.id * T.m + i]]
+  else {
+    // σᵢ⁻¹ = Δ⁻¹ · (Δ σᵢ⁻¹); move the Δ⁻¹ to the front, mirroring what it passes.
+    parts = form.parts.map((p) => T.flip[p])
+    parts.push(T.pos[T.delta * T.m + i])
+    k--
+  }
+  // Make neighbouring pieces "left-weighted" (crossings moved as far left as they can go), from
+  // the new end leftwards; once a pair doesn't change, the rest is still fine.
+  for (let j = parts.length - 2; j >= 0; j--) {
+    let a = parts[j]
+    let b = parts[j + 1]
+    let moved = false
+    for (let free = T.starts[b] & ~T.ends[a]; free; free = T.starts[b] & ~T.ends[a]) {
+      const c = 31 - Math.clz32(free & -free) // the lowest such place
+      a = T.pos[a * T.m + c]
+      b = T.val[b * T.m + c]
+      moved = true
+    }
+    parts[j] = a
+    parts[j + 1] = b
+    if (!moved) break
+  }
+  let first = 0
+  while (first < parts.length && parts[first] === T.delta) first++
+  k += first
+  let last = parts.length
+  while (last > first && parts[last - 1] === T.id) last--
+  return { k, parts: first || last < parts.length ? parts.slice(first, last) : parts }
+}
 
 /** The standard form of a crossing list on n ropes: { k, parts }. */
 export function normalForm(n, word) {
-  let k = 0
-  let parts = []
-  for (const [i, s] of word) {
-    if (s > 0) parts.push(swapPos(ident(n), i))
-    else {
-      // σᵢ⁻¹ = Δ⁻¹ · (Δ σᵢ⁻¹); move the Δ⁻¹ to the front, mirroring what it passes.
-      parts = parts.map(flip)
-      k--
-      parts.push(swapPos(delta(n), i))
-    }
-  }
-  // Make every neighbouring pair "left-weighted" (crossings moved as far left as they can go)
-  // until nothing changes; then the full twists Δ sit at the front and plain pieces at the end.
-  for (let changed = true; changed; ) {
-    changed = false
-    for (let j = 0; j + 1 < parts.length; j++) {
-      let a = parts[j]
-      let b = parts[j + 1]
-      for (let i = 0; i < n - 1; i++) {
-        if (starts(b, i) && !ends(a, i)) {
-          a = swapPos(a, i)
-          b = swapVal(b, i)
-          changed = true
-          i = -1 // look again from the start
-        }
-      }
-      parts[j] = a
-      parts[j + 1] = b
-    }
-  }
-  while (parts.length && isDelta(parts[0])) {
-    parts.shift()
-    k++
-  }
-  parts = parts.filter((w) => !isIdent(w))
-  return { k, parts }
+  return word.reduce((f, g) => addToForm(n, f, g), { k: 0, parts: [] })
 }
 
-const formKey = (f) => `${f.k}|${f.parts.map((w) => w.join('')).join('.')}`
+const formKey = (f) => `${f.k}|${f.parts.join('.')}`
 export const tangleKey = (n, word) => formKey(normalForm(n, word))
 export const isTrivial = (n, word) => {
   const f = normalForm(n, word)
@@ -110,15 +136,49 @@ export function passOver(i, j) {
 
 /** Move rope r's bottom peg into hole h. Returns the new state (the old one is untouched). */
 export function move(state, r, h) {
-  const o = bottomOrder(state.top, state.word)
+  const n = state.top.length
+  const o = state.order ?? bottomOrder(state.top, state.word)
   const i = o.indexOf(r)
-  const j = o.filter((x) => x !== r && state.hole[x] < h).length
+  let j = 0
+  for (const x of o) if (x !== r && state.hole[x] < h) j++
   let word = state.word
-  for (const g of passOver(i, j)) word = addCrossing(word, g)
-  return { ...state, word, hole: { ...state.hole, [r]: h } }
+  let form = state.form ?? normalForm(n, word)
+  const wind = (state.wind ?? windOf(state)).slice()
+  const order = o.slice()
+  for (const g of passOver(i, j)) {
+    const [k, s] = g
+    const a = order[k]
+    const b = order[k + 1]
+    wind[a < b ? a * n + b : b * n + a] += s
+    order[k] = b
+    order[k + 1] = a
+    word = addCrossing(word, g)
+    form = addToForm(n, form, g)
+  }
+  return { ...state, word, form, wind, order, hole: { ...state.hole, [r]: h } }
 }
 
-export const solved = (state) => isTrivial(state.top.length, state.word)
+/** How much each pair of ropes winds (sum of its crossings, + or -), as an n × n table. */
+function windOf(state) {
+  const n = state.top.length
+  const o = state.top.slice()
+  const wind = new Int8Array(n * n)
+  for (const [i, s] of state.word) {
+    const a = o[i]
+    const b = o[i + 1]
+    wind[a < b ? a * n + b : b * n + a] += s
+    o[i] = b
+    o[i + 1] = a
+  }
+  return wind
+}
+
+export const solved = (state) => {
+  const f = state.form ?? normalForm(state.top.length, state.word)
+  return f.k === 0 && f.parts.length === 0
+}
+/** Same tangle and same holes = same key. */
+export const stateKey = (s) => `${Object.values(s.hole).join(',')}#${formKey(s.form ?? normalForm(s.top.length, s.word))}`
 
 /** Holes nobody is using. */
 export function freeHoles(state) {
@@ -156,20 +216,16 @@ export function isFree(state, r) {
 }
 
 /**
- * Pairs of ropes wound around each other (looking at just those two). One of each such pair
- * has to move at least once: the solver's lower bound.
+ * Pairs of ropes wound around each other (looking at just those two): [a, b, turns]. One move
+ * changes a pair's winding by at most one crossing, so a pair needs at least |turns| moves of
+ * a or b: the solver's lower bound.
  */
 export function linkedPairs(state) {
-  const o = state.top.slice()
-  const wind = new Map()
-  for (const [i, s] of state.word) {
-    const a = Math.min(o[i], o[i + 1])
-    const b = Math.max(o[i], o[i + 1])
-    const key = a * 16 + b
-    wind.set(key, (wind.get(key) ?? 0) + s)
-    ;[o[i], o[i + 1]] = [o[i + 1], o[i]]
-  }
-  return [...wind].filter(([, w]) => w !== 0).map(([key]) => [key >> 4, key & 15])
+  const n = state.top.length
+  const wind = state.wind ?? windOf(state)
+  const out = []
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) if (wind[a * n + b]) out.push([a, b, Math.abs(wind[a * n + b])])
+  return out
 }
 
 /** Seeded random numbers, so a level is the same every time. */
@@ -187,7 +243,8 @@ export function rng(seed) {
 export function untangled(ropes, holes, slots = [...Array(ropes).keys()]) {
   const hole = {}
   slots.forEach((h, i) => (hole[i] = h))
-  return { top: [...Array(ropes).keys()], word: [], hole, holes }
+  const top = [...Array(ropes).keys()]
+  return { top, word: [], form: { k: 0, parts: [] }, wind: new Int8Array(ropes * ropes), order: top.slice(), hole, holes }
 }
 
 /** Play a list of moves [[rope, hole], ...] from a state. */

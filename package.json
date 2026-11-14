@@ -5,8 +5,8 @@
   "scripts": {
     "serve": "node tests/serve.mjs",
     "levels": "node tools/make-levels.mjs",
-    "check": "node --test tests/pour.test.mjs",
-    "test": "node --test tests/pour.test.mjs && playwright test",
+    "check": "node --test tests/pour.test.mjs tests/untangle.test.mjs",
+    "test": "node --test tests/pour.test.mjs tests/untangle.test.mjs && playwright test",
     "test:published": "bash tools/test-published.sh"
   },
   "devDependencies": {

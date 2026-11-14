@@ -75,3 +75,38 @@ test('one rope moved over two, untangled by moving the two over it', () => {
   assert.ok(solved(play(s, [[0, 0]])))
   assert.ok(!solved(play(s, [[1, 0]])))
 })
+
+// ---------- the level list (data/untangle-levels.json) ----------
+import { readFileSync, existsSync } from 'node:fs'
+import { parseLevel, plan, LEVEL_COUNT } from '../js/untangle/levels.js'
+import { fewestMoves } from '../js/untangle/solver.js'
+const file = new URL('../data/untangle-levels.json', import.meta.url)
+const data = existsSync(file) ? JSON.parse(readFileSync(file)) : null
+
+test('every level loads, is tangled, and has its fewest moves', { skip: !data && 'levels not made yet' }, () => {
+  assert.equal(data.levels.length, LEVEL_COUNT)
+  data.levels.forEach((text, i) => {
+    const { start, moves } = parseLevel(text)
+    const s = play(start, moves)
+    assert.ok(!solved(s), `level ${i + 1} starts untangled`)
+    assert.equal(s.top.length, plan(i + 1).ropes, `level ${i + 1} rope count`)
+    assert.ok(data.min[i] >= 1 && data.min[i] <= moves.length, `level ${i + 1} fewest ${data.min[i]}`)
+  })
+})
+
+test('the first 60 levels: the solver agrees on the fewest moves', { skip: !data && 'levels not made yet' }, () => {
+  for (let i = 0; i < 60; i++) {
+    const { start, moves } = parseLevel(data.levels[i])
+    assert.equal(fewestMoves(play(start, moves)).moves, data.min[i], `level ${i + 1}`)
+  }
+})
+
+test('levels get harder: ropes never drop, fewest moves climb', { skip: !data && 'levels not made yet' }, () => {
+  let ropes = 0
+  for (let n = 1; n <= LEVEL_COUNT; n++) {
+    assert.ok(plan(n).ropes >= ropes)
+    ropes = plan(n).ropes
+  }
+  const avg = (a, b) => data.min.slice(a, b).reduce((x, y) => x + y, 0) / (b - a)
+  assert.ok(avg(0, 20) < avg(200, 300) && avg(200, 300) < avg(2800, 3000))
+})
