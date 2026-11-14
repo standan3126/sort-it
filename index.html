@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="day">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sort It · GameHub</title>
+    <meta name="theme-color" content="#000000" />
+    <link rel="stylesheet" href="/shared/v1/kit.css" />
+    <link rel="stylesheet" href="/shared/v1/settings.css" />
+    <link rel="stylesheet" href="/shared/v1/book.css" />
+    <link rel="stylesheet" href="css/game.css" />
+  </head>
+  <body>
+    <!-- Launch page: one card per sorting game (Pour first; more later). -->
+    <main id="home" class="hub-launch">
+      <header class="hub-launch-head">
+        <h1>Sort It</h1>
+        <p>Sorting puzzles. Put every colour in its place.</p>
+      </header>
+      <div class="games">
+        <section class="game-card" id="card-pour">
+          <div class="game-head">
+            <span class="game-name">Pour</span>
+            <span class="game-level" id="pour-level">Level 1</span>
+          </div>
+          <p class="game-about">Pour the colours between tubes until every tube holds just one colour.</p>
+        </section>
+      </div>
+      <div class="hub-launch-actions">
+        <button type="button" class="hub-play" id="play">Play</button>
+        <button type="button" class="hub-levels" id="levels" hidden>Levels</button>
+      </div>
+    </main>
+
+    <!-- The levels: six a page (the toolbox's book). -->
+    <section id="book-screen" class="screen" hidden>
+      <p class="screen-title">Pour levels</p>
+      <div id="book" class="book-area"></div>
+    </section>
+
+    <!-- Playing a level. -->
+    <section id="play-screen" class="screen" hidden>
+      <div class="level-info">
+        <p class="level-name" id="level-name">Level 1</p>
+        <p class="level-clock" id="level-clock">0:00</p>
+      </div>
+      <canvas id="board" aria-label="The tubes. Tap a tube, then tap where to pour."></canvas>
+      <footer class="bar">
+        <button type="button" class="tool" id="undo"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span id="undo-label">Undo · 5</span></button>
+        <button type="button" class="tool" id="restart"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v5h-5"/><path d="M20 10a8 8 0 1 0 1 6"/></svg><span id="restart-label">Restart</span></button>
+      </footer>
+    </section>
+
+    <!-- No moves left. -->
+    <div id="stuck" class="sheet" hidden>
+      <div class="card">
+        <h2>No moves left</h2>
+        <p id="stuck-text" class="soft"></p>
+        <div class="card-actions">
+          <button type="button" class="hub-button" id="stuck-undo">Undo</button>
+          <button type="button" class="hub-button" id="stuck-restart">Restart</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level done: fireworks and the level's numbers. -->
+    <div id="done" class="sheet done" hidden>
+      <canvas id="fireworks" aria-hidden="true"></canvas>
+      <div class="card">
+        <h2 id="done-title">Level 1 done!</h2>
+        <dl class="stats">
+          <div><dt>Your moves</dt><dd id="done-moves">0</dd></div>
+          <div><dt>Fewest possible</dt><dd id="done-min">0</dd></div>
+          <div><dt>Time</dt><dd id="done-time">0:00</dd></div>
+          <div><dt>Undos used</dt><dd id="done-undos">0</dd></div>
+        </dl>
+        <p id="done-score" class="score"></p>
+        <p id="done-best" class="soft"></p>
+        <button type="button" class="hub-button big" id="done-next">Next level</button>
+        <button type="button" class="pill" id="done-home">Home</button>
+      </div>
+    </div>
+
+    <!-- The rules (the ? under the gear; opens by itself the first time). -->
+    <div id="rules" class="sheet" hidden>
+      <div class="card rules-card">
+        <h2>How to play Pour</h2>
+        <p>Tap a tube to pick it up, then tap another tube to pour into it.</p>
+        <dl>
+          <dt>Pouring</dt>
+          <dd>The top colour pours onto the same colour, or into an empty tube, as much as fits.</dd>
+          <dt>Done</dt>
+          <dd>Every tube holds one colour (or nothing).</dd>
+          <dt>Undo</dt>
+          <dd><b>5</b> each level. Use them well.</dd>
+          <dt>Stuck?</dt>
+          <dd>With no moves and no undos left, start the level again. Restart is always free.</dd>
+          <dt>Your score</dt>
+          <dd>When you finish, you see your moves next to the fewest moves possible. Every pour counts, even one you undo. Can you match it?</dd>
+          <dt>The clock</dt>
+          <dd>Counts only while the tubes are in front of you.</dd>
+        </dl>
+        <p class="soft rules-close">Tap anywhere to close</p>
+      </div>
+    </div>
+
+    <!-- Night: a warm filter over everything that takes out blue light. -->
+    <div id="night-filter" aria-hidden="true" hidden></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

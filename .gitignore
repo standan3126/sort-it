@@ -1,0 +1,15 @@
+# Private: never published
+CLAUDE.md
+needfromyou.md
+private/
+*.local*
+.env*
+TXT.txt
+
+# Generated
+node_modules/
+dist/
+test-results/
+
+# Ideas and plans (private)
+LATER.md
